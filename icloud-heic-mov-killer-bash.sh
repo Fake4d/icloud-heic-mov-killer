@@ -4,16 +4,18 @@
 verzeichnis="/home/example/path"
 
 # Schleife über alle Dateien im Verzeichnis
+shopt -s nullglob
 for datei in "$verzeichnis"/*; do
-        dateiname="${datei%.*}"
+        [[ -f "$datei" ]] || continue
+        basis="${datei%.*}"
 
-        # Überprüfe, ob eine Datei mit derselben Basis, aber anderer Erweiterung existiert
-	shopt -s nocaseglob # Ignoriere Groß-/Kleinschreibung
-        andere_datei="${dateiname}.heic"
-        if [[ -f "$andere_datei" && "$andere_datei" != "$datei" ]]; then
-            # Lösche die Datei
-            rm "$datei"
-            echo "Datei $datei gelöscht."
+        # Überprüfe, ob eine Datei mit derselben Basis als HEIC existiert
+        heic_files=( "${basis}.heic" "${basis}.HEIC" )
+        if [[ -f "${heic_files[0]}" || -f "${heic_files[1]}" ]]; then
+            ext="${datei##*.}"
+            if [[ "${ext,,}" != "heic" ]]; then
+                rm -- "$datei"
+                echo "Datei gelöscht: $datei"
+            fi
         fi
 done
-
