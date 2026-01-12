@@ -3,9 +3,10 @@ Delete all the Livephoto videos from a raw / original export of iCloud data. If 
 
 Example:
 
-IMG_1234.HEIC   ← Picture
-IMG_1234.MOV    ← Livevideo from IMG_1234.HEIC
-IMG_1235.MOV    ← Normal video record
+* IMG_1234.HEIC   ← Picture
+* IMG_1234.MOV    ← Livevideo from IMG_1234.HEIC
+* IMG_1235.MOV    ← Normal video record
 
 -> IMG_1234.MOV will be deleted
--> IMG_1235.MOV will be deleted
+
+-> IMG_1235.MOV will not be deleted
