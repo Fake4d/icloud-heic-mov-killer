@@ -1,19 +1,42 @@
-<# 
-Löscht alle Nicht-HEIC-Dateien, wenn eine HEIC mit gleicher Basis existiert.
-#>
+[CmdletBinding(SupportsShouldProcess=$true)]
+param(
+    [Parameter(Position=0)]
+    [string]$Directory = "C:\Users\YourUser\Downloads\test\iCloud",
 
-$verzeichnis = "C:\Users\YourUser\Downloads\test\iCloud"
+    [switch]$Recurse,
 
-Get-ChildItem -LiteralPath $verzeichnis -File | ForEach-Object {
-    $file = $_
-    $basis = [System.IO.Path]::ChangeExtension($file.FullName, $null)
+    [switch]$Force
+)
 
-    $heicLower = "${basis}.heic"
-    $heicUpper = "${basis}.HEIC"
-    $heicExists = (Test-Path -LiteralPath $heicLower) -or (Test-Path -LiteralPath $heicUpper)
+# Get files (optionally recursive)
+$files = if ($Recurse) {
+    Get-ChildItem -Path $Directory -File -Recurse -ErrorAction Stop
+} else {
+    Get-ChildItem -Path $Directory -File -ErrorAction Stop
+}
 
-    if ($heicExists -and -not ($file.Extension -ieq ".heic")) {
-        Remove-Item -LiteralPath $file.FullName
-        Write-Host "Datei gelöscht: $($file.FullName)"
+foreach ($file in $files) {
+    # skip HEICs
+    if ($file.Extension -ieq ".heic") { continue }
+
+    $base = [System.IO.Path]::ChangeExtension($file.FullName, $null)
+
+    # Find any file with the same base and a .heic extension (case-insensitive)
+    # Use wildcard search for the same base + any extension then filter by extension
+    $candidatePattern = "$base.*"
+    $heicCandidate = Get-ChildItem -Path $candidatePattern -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Extension -ieq ".heic" } |
+        Select-Object -First 1
+
+    if ($heicCandidate) {
+        $what = "Remove file '$($file.FullName)' because HEIC exists: '$($heicCandidate.Name)'"
+        if ($PSCmdlet.ShouldProcess($file.FullName, $what)) {
+            $removeParams = @{ LiteralPath = $file.FullName; ErrorAction = 'Stop' }
+            if ($Force) { $removeParams.Force = $true }
+            Remove-Item @removeParams
+            Write-Host "Deleted: $($file.FullName)"
+        } else {
+            Write-Host "Would delete: $($file.FullName) (HEIC present: $($heicCandidate.Name))"
+        }
     }
 }
